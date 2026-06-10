@@ -15,11 +15,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call(PortfolioContentSeeder::class);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        if ($password = env('ADMIN_PASSWORD')) {
+            User::firstOrCreate(
+                ['email' => env('ADMIN_EMAIL', 'info@rolandaga.com')],
+                ['name' => 'Roland Aga', 'password' => $password],
+            );
+        }
     }
 }
