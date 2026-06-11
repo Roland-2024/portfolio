@@ -71,15 +71,83 @@ class PortfolioContentSeeder extends Seeder
             ['sort_order' => 1]
         );
 
-        $projects = [
-            ['Custom Business Systems', 'Web Applications', 'Maintainable Laravel applications tailored to business workflows.', 'https://github.com/Roland-2024', 'blue'],
-            ['WordPress & WooCommerce', 'E-Commerce', 'Custom themes, plugins, ACF integrations, online stores, and performance improvements.', 'https://rolandaga.com', 'orange'],
-            ['Scalable Integrations', 'Cloud & APIs', 'REST APIs, microservices, third-party integrations, Azure services, and IoT platforms.', 'https://upwork.com/freelancers/~01454dee02d79b14b8', 'green'],
-            ['Deployment & Optimization', 'DevOps', 'Docker, Linux servers, CI/CD pipelines, Cloudflare, security, SEO, and performance.', 'mailto:info@rolandaga.com', 'purple'],
-        ];
-        foreach ($projects as $index => [$title, $category, $description, $url, $color]) {
-            Project::firstOrCreate(compact('title'), compact('category', 'description', 'url', 'color') + ['sort_order' => $index]);
-        }
+        Project::firstOrCreate(
+            ['title' => 'MediGreen Pharmacy E-commerce Website with Odoo Integration'],
+            [
+                'category' => 'E-Commerce',
+                'description' => 'Built a custom WordPress theme from scratch for an online pharmacy/e-commerce website, using Tailwind CSS for the frontend and WooCommerce for product sales. Integrated the website with Odoo so products, stock, and pricing can sync from the ERP into the store. Developed a responsive, modern interface optimized for both desktop and mobile, with a custom design focused on usability, speed, and clean product presentation.',
+                'url' => 'https://medigreen.al/',
+                'image' => 'assets/projects/medigreen-mockup.webp',
+                'color' => 'green',
+                'sort_order' => -60,
+                'is_published' => true,
+            ]
+        );
+
+        Project::firstOrCreate(
+            ['title' => 'FirstStore.al - WooCommerce E-commerce Platform'],
+            [
+                'category' => 'E-Commerce',
+                'description' => 'Developed a custom WooCommerce e-commerce website for FirstStore, an online store focused on camping and outdoor products. Built and customized the WordPress theme, configured WooCommerce, optimized performance, and ensured a responsive shopping experience across devices. Integrated Odoo ERP with WooCommerce to sync products, stock levels, and orders, enabling centralized inventory and order management. Implemented a scalable, SEO-friendly setup to support smooth and reliable online sales operations.',
+                'url' => 'https://firststore.al/',
+                'image' => 'assets/projects/firststore-mockup.webp',
+                'color' => 'blue',
+                'sort_order' => -50,
+                'is_published' => true,
+            ]
+        );
+
+        Project::firstOrCreate(
+            ['title' => 'Custom WordPress Website for UK Accounting Firm (AL-TAX LTD)'],
+            [
+                'category' => 'WordPress',
+                'description' => 'Developed a bespoke WordPress theme for AL-TAX LTD, a UK-based accounting firm. Delivered a fast, SEO-optimized site featuring custom post types for services and projects, Google reCAPTCHA-secured forms, and GDPR-ready cookie policy integration. Implemented caching, schema, responsive layout, and multilingual readiness using lightweight plugins. Client now has full CMS control.',
+                'url' => 'https://al-tax.co.uk/',
+                'image' => 'assets/projects/al-tax-mockup.webp',
+                'color' => 'green',
+                'sort_order' => -40,
+                'is_published' => true,
+            ]
+        );
+
+        Project::firstOrCreate(
+            ['title' => 'Euronews Albania'],
+            [
+                'category' => 'WordPress',
+                'description' => 'Developed a custom WordPress theme from scratch for Euronews Albania, a high-traffic editorial news platform. Implemented YouTube integration for video and live content, and connected Google Analytics (GA4) via API for tracking user behavior and performance. Focused on PHP-based WordPress development, performance optimization, SEO-friendly structure, and improving the editorial publishing workflow to ensure speed, stability, and scalability across desktop and mobile under heavy traffic.',
+                'url' => 'https://euronews.al/',
+                'image' => 'assets/projects/euronews-albania-mockup.webp',
+                'color' => 'blue',
+                'sort_order' => -30,
+                'is_published' => true,
+            ]
+        );
+
+        Project::firstOrCreate(
+            ['title' => 'Football Betting Tips & Predictions Website'],
+            [
+                'category' => 'WordPress',
+                'description' => 'Designed and developed a fully dynamic football betting tips website using WordPress. Built custom post types for matches, integrated Advanced Custom Fields (ACF) for intuitive content management, and optimized site performance for speed and SEO. Implemented structured data, Cloudflare performance enhancements, and responsive design, resulting in increased user engagement, improved search rankings, and higher organic traffic.',
+                'url' => 'https://betprofe.com/',
+                'image' => 'assets/projects/betprofe-mockup.webp',
+                'color' => 'orange',
+                'sort_order' => -10,
+                'is_published' => true,
+            ]
+        );
+
+        Project::firstOrCreate(
+            ['title' => 'DasWeltAuto - Certified Used Cars Platform (Albania)'],
+            [
+                'category' => 'Full-Stack Web Development',
+                'description' => "DasWeltAuto is Volkswagen Group's certified used car platform in Albania. As a Full-Stack Developer, I built a fast, responsive, and SEO-optimized website where users can browse and compare guaranteed vehicles. I handled both front-end and back-end development, integrated RESTful APIs, and ensured seamless data flow, strong performance, and a modern user experience across all devices.",
+                'url' => 'https://dasweltauto.al/',
+                'image' => 'assets/projects/dasweltauto-mockup.webp',
+                'color' => 'orange',
+                'sort_order' => -20,
+                'is_published' => true,
+            ]
+        );
 
         $links = [
             ['instagram', 'Instagram', 'https://www.instagram.com/roland_aga/'],

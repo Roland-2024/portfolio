@@ -19,7 +19,11 @@ class ProjectController extends Controller
 
     public function create(): View
     {
-        return view('admin.projects.form', ['item' => new Project]);
+        return view('admin.projects.form', [
+            'item' => new Project([
+                'sort_order' => (Project::min('sort_order') ?? 0) - 1,
+            ]),
+        ]);
     }
 
     public function edit(Project $project): View

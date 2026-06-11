@@ -4,10 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="{{ $profile->intro }}">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="{{ url('/') }}">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ $profile->name }} | {{ $profile->title }}">
+  <meta property="og:description" content="{{ $profile->intro }}">
+  <meta property="og:url" content="{{ url('/') }}">
+  <meta property="og:image" content="{{ asset('assets/wallpaper/roland-portfolio.webp') }}">
+  <meta property="og:image:alt" content="Roland's Portfolio displayed across a Windows XP-inspired green hill">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ $profile->name }} | {{ $profile->title }}">
+  <meta name="twitter:description" content="{{ $profile->intro }}">
+  <meta name="twitter:image" content="{{ asset('assets/wallpaper/roland-portfolio.webp') }}">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>{{ $profile->name }} OS | Portfolio</title>
-  <link rel="icon" href="{{ asset('assets/favicon.png') }}">
-  <link rel="stylesheet" href="{{ asset('styles.css') }}">
+  <title>{{ $profile->name }} | {{ $profile->title }} Portfolio</title>
+  <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('assets/favicon-ra-shade.png') }}">
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v={{ filemtime(public_path('styles.css')) }}">
+  @php
+    $structuredData = [
+      '@context' => 'https://schema.org',
+      '@type' => 'Person',
+      'name' => $profile->name,
+      'jobTitle' => $profile->title,
+      'url' => $profile->website ?: url('/'),
+      'image' => $profile->profile_image_url,
+      'email' => 'mailto:'.$profile->email,
+      'sameAs' => $socialLinks->pluck('url')->values()->all(),
+      'knowsAbout' => $skills->flatten()->pluck('name')->values()->all(),
+    ];
+  @endphp
+  <script type="application/ld+json">
+    @json($structuredData)
+  </script>
 </head>
 <body class="startup-pending">
   <section class="boot-screen" id="boot-screen" aria-label="Roland OS is starting">
@@ -17,7 +45,7 @@
       <div class="boot-progress" aria-label="Loading"><span></span><span></span><span></span></div>
     </div>
     <div class="boot-tip"><span>For the best experience</span><strong>Turn your sound on</strong></div>
-    <img class="boot-wordmark" src="{{ asset('assets/boot/boot-wordmark.webp') }}" alt="">
+    <img class="boot-wordmark" src="{{ asset('assets/boot/boot-wordmark.webp') }}" alt="Roland OS portfolio system">
   </section>
 
   <section class="login-overlay" id="login-screen" aria-label="Log in to Roland OS">
@@ -35,13 +63,16 @@
 
   <div class="welcome-screen" id="welcome-screen" aria-live="polite">welcome</div>
 
-  <main class="desktop" id="desktop">
+  <main class="desktop" id="desktop" aria-label="Roland's Portfolio desktop">
     <h1 class="sr-only">{{ $profile->name }} developer portfolio</h1>
     <section class="desktop-icons" aria-label="Desktop applications">
       <button class="desktop-icon" data-open="about"><img src="{{ asset('assets/desktop/about.webp') }}" alt=""><span class="desktop-icon-label">About Me</span></button>
       <button class="desktop-icon" data-open="resume"><img src="{{ asset('assets/desktop/resume.webp') }}" alt=""><span class="desktop-icon-label">My Resume</span></button>
       <button class="desktop-icon" data-open="projects"><img src="{{ asset('assets/desktop/projects.webp') }}" alt=""><span class="desktop-icon-label">My Projects</span></button>
       <button class="desktop-icon" data-open="contact"><img src="{{ asset('assets/desktop/contact.webp') }}" alt=""><span class="desktop-icon-label">Contact Me</span></button>
+      <button class="desktop-icon" data-open="minesweeper"><img src="{{ asset('assets/start-menu/minesweeper.svg') }}" alt=""><span class="desktop-icon-label">Minesweeper</span></button>
+      <button class="desktop-icon" data-open="jsonstudio"><img src="{{ asset('assets/start-menu/json-studio.svg') }}" alt=""><span class="desktop-icon-label">JSON Studio</span></button>
+      <button class="desktop-icon" data-open="terminal"><img src="{{ asset('assets/start-menu/cmd.webp') }}" alt=""><span class="desktop-icon-label">Command Prompt</span></button>
     </section>
 
     <section class="window" id="window-about" data-window="about" aria-label="About Me window">
@@ -76,7 +107,7 @@
         </div>
         <div class="projects-heading"><div><p class="eyebrow">Professional capabilities</p><h2>Solutions I build</h2></div>@if($profile->upwork_url)<a class="online-pill" href="{{ $profile->upwork_url }}" target="_blank" rel="noopener">{{ $profile->availability ?: 'Available on Upwork' }}</a>@endif</div>
         <div class="project-grid">
-          @foreach($projects as $project)<article class="project-card {{ $project->color }}" data-project-card data-category="{{ Str::slug($project->category) }}">@if($project->image_url)<img class="project-image" src="{{ $project->image_url }}" alt="">@endif<span>{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }} / {{ strtoupper($project->category) }}</span><h3>{{ $project->title }}</h3><p>{{ $project->description }}</p>@if($project->url)<a href="{{ $project->url }}" target="_blank" rel="noopener">Open project &rarr;</a>@endif</article>@endforeach
+          @foreach($projects as $project)<article class="project-card {{ $project->color }}" data-project-card data-category="{{ Str::slug($project->category) }}">@if($project->image_url)<img class="project-image" src="{{ $project->image_url }}" alt="{{ $project->title }} responsive website mockup" width="1199" height="675" loading="lazy" decoding="async">@endif<span>{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }} / {{ strtoupper($project->category) }}</span><h3>{{ $project->title }}</h3><p>{{ $project->description }}</p>@if($project->url)<a href="{{ $project->url }}" target="_blank" rel="noopener">Open project &rarr;</a>@endif</article>@endforeach
         </div>
       </div>
       <div class="statusbar">{{ $projects->count() }} objects</div>
@@ -116,8 +147,8 @@
       <div class="menu-bar"><button data-menu="file">File</button><button data-menu="view">View</button><button data-menu="favorites">Favorites</button><button data-menu="help">Help</button></div>
       <div class="toolbar"><button class="soft-button" data-history="-1">&larr; Back</button><button class="soft-button" data-history="1">&rarr; Forward</button><button class="soft-button" data-open="media">Media Player</button></div>
       <div class="address-bar"><span>Address</span><input class="address-input" value="roland://music" aria-label="Music address"><button data-address-go>Go</button></div>
-      <div class="utility-content music-player"><h2>Roland OS Sounds</h2><p>Select a system sound to preview it.</p><div class="playlist"><button data-audio-src="{{ asset('assets/sounds/login.wav') }}">Startup sound</button><button data-audio-src="{{ asset('assets/sounds/balloon.wav') }}">Notification sound</button><button data-audio-src="{{ asset('assets/sounds/logoff.wav') }}">Logoff sound</button></div><audio id="music-audio" controls></audio></div>
-      <div class="statusbar">Ready to play</div>
+      <div class="utility-content music-player"><h2>Juve</h2><p>Play the featured track or preview a Roland OS system sound.</p><div class="playlist"><button class="featured-track" data-audio-src="{{ asset('assets/sounds/juve.mp3') }}">Play Juve</button><button data-audio-src="{{ asset('assets/sounds/login.wav') }}">Startup sound</button><button data-audio-src="{{ asset('assets/sounds/balloon.wav') }}">Notification sound</button><button data-audio-src="{{ asset('assets/sounds/logoff.wav') }}">Logoff sound</button></div><audio id="music-audio" src="{{ asset('assets/sounds/juve.mp3') }}" controls preload="metadata"></audio></div>
+      <div class="statusbar">Ready to play Juve</div>
     </section>
 
     <section class="window compact-window utility-window" id="window-media" data-window="media" aria-label="Media Player window">
@@ -125,8 +156,8 @@
       <div class="menu-bar"><button data-menu="file">File</button><button data-menu="view">View</button><button data-menu="favorites">Favorites</button><button data-menu="help">Help</button></div>
       <div class="toolbar"><button class="soft-button" data-history="-1">&larr; Back</button><button class="soft-button" data-history="1">&rarr; Forward</button><button class="soft-button" data-media-action="play">Play</button><button class="soft-button" data-media-action="stop">Stop</button></div>
       <div class="address-bar"><span>Address</span><input class="address-input" value="roland://media" aria-label="Media address"><button data-address-go>Go</button></div>
-      <div class="utility-content media-player"><div class="media-screen"><img id="media-preview" data-src="{{ asset('assets/start-menu/userlogin.gif') }}" src="{{ asset('assets/start-menu/userlogin.gif') }}" alt="Roland OS animated media"></div><h2>Roland OS Welcome Animation</h2><p>Use the toolbar to play or stop the animation.</p></div>
-      <div class="statusbar">Playing</div>
+      <div class="utility-content media-player"><div class="media-screen"><iframe id="media-youtube" title="YouTube video player" data-video-id="1x9ohaOSi0k" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><div class="media-placeholder" id="media-placeholder"><strong>Loading YouTube Video...</strong></div></div><h2>Featured Video</h2><p>Use the YouTube player or the toolbar controls. Toolbar Play starts muted; unmute from the video player.</p></div>
+      <div class="statusbar">Loading YouTube video</div>
     </section>
 
     <section class="window utility-window" id="window-paint" data-window="paint" aria-label="Paint window">
@@ -136,6 +167,33 @@
       <div class="address-bar"><span>Address</span><input class="address-input" value="roland://paint" aria-label="Paint address"><button data-address-go>Go</button></div>
       <div class="paint-content"><canvas id="paint-canvas" width="900" height="500" aria-label="Drawing canvas"></canvas></div>
       <div class="statusbar">Drag on the canvas to draw</div>
+    </section>
+
+    <section class="window compact-window utility-window minesweeper-window" id="window-minesweeper" data-window="minesweeper" aria-label="Minesweeper game window">
+      <div class="titlebar"><img class="title-icon" src="{{ asset('assets/start-menu/minesweeper.svg') }}" alt=""><strong>Minesweeper</strong><div class="window-actions"><button data-action="minimize" aria-label="Minimize">_</button><button data-action="maximize" aria-label="Maximize">&#9633;</button><button data-action="close" aria-label="Close">&times;</button></div></div>
+      <div class="menu-bar"><button data-menu="game">Game</button><button data-menu="help">Help</button></div>
+      <div class="minesweeper-content">
+        <div class="mine-panel">
+          <output class="mine-display" id="mine-counter" aria-label="Mines remaining">010</output>
+          <button class="mine-reset" id="mine-reset" type="button" aria-label="Start a new Minesweeper game">🙂</button>
+          <output class="mine-display" id="mine-timer" aria-label="Elapsed seconds">000</output>
+        </div>
+        <div class="mine-board" id="mine-board" role="grid" aria-label="Beginner Minesweeper board"></div>
+        <p class="mine-instructions">Left-click to reveal. Right-click to place a flag.</p>
+      </div>
+      <div class="statusbar" id="mine-status">Beginner: 9 × 9 board, 10 mines</div>
+    </section>
+
+    <section class="window utility-window json-studio-window" id="window-jsonstudio" data-window="jsonstudio" aria-label="JSON Studio developer tool window">
+      <div class="titlebar"><img class="title-icon" src="{{ asset('assets/start-menu/json-studio.svg') }}" alt=""><strong>JSON Studio</strong><div class="window-actions"><button data-action="minimize" aria-label="Minimize">_</button><button data-action="maximize" aria-label="Maximize">&#9633;</button><button data-action="close" aria-label="Close">&times;</button></div></div>
+      <div class="menu-bar"><button data-menu="file">File</button><button data-menu="edit">Edit</button><button data-menu="view">View</button><button data-menu="help">Help</button></div>
+      <div class="toolbar json-toolbar"><button class="soft-button" data-json-action="format">Format</button><button class="soft-button" data-json-action="minify">Minify</button><button class="soft-button" data-json-action="validate">Validate</button><button class="soft-button" data-json-action="sample">Load Sample</button><button class="soft-button" data-json-action="copy">Copy Output</button><button class="soft-button" data-json-action="clear">Clear</button></div>
+      <div class="address-bar"><span>Address</span><input class="address-input" value="roland://jsonstudio" aria-label="JSON Studio address"><button data-address-go>Go</button></div>
+      <div class="json-studio-content">
+        <label>Input JSON<textarea id="json-input" spellcheck="false" placeholder='{"hello":"world"}'></textarea></label>
+        <label>Formatted output<textarea id="json-output" spellcheck="false" readonly placeholder="Formatted JSON appears here"></textarea></label>
+      </div>
+      <div class="statusbar" id="json-status">Ready. Paste JSON or load the sample.</div>
     </section>
 
     <section class="window compact-window utility-window" id="window-terminal" data-window="terminal" aria-label="Command Prompt window">
@@ -151,7 +209,7 @@ Type "help" to see available commands.</pre><form id="terminal-form"><label>C:\P
       <div class="menu-bar"><button data-menu="file">File</button><button data-menu="view">View</button><button data-menu="favorites">Favorites</button><button data-menu="help">Help</button></div>
       <div class="toolbar"><button class="soft-button" data-viewer-action="-1">&larr; Previous</button><button class="soft-button" data-viewer-action="1">Next &rarr;</button><button class="soft-button" data-command="fullscreen">Full Screen</button></div>
       <div class="address-bar"><span>Address</span><input class="address-input" value="roland://viewer" aria-label="Viewer address"><button data-address-go>Go</button></div>
-      <div class="viewer-content" data-images='@json([asset("assets/profile/roland-cartoon.png"), asset("assets/wallpaper/roland-portfolio.png"), asset("assets/boot/boot-wordmark.webp")])'><img id="viewer-image" src="{{ asset('assets/profile/roland-cartoon.png') }}" alt="Portfolio image"></div>
+      <div class="viewer-content" data-images="{{ json_encode([asset('assets/profile/roland-cartoon.png'), asset('assets/wallpaper/roland-portfolio.webp'), asset('assets/boot/boot-wordmark.webp')]) }}" data-image-alts="{{ json_encode(["Cartoon portrait of {$profile->name}", "Windows XP-inspired green hill wallpaper reading Roland's Portfolio", 'Roland OS portfolio system wordmark']) }}"><img id="viewer-image" src="{{ asset('assets/profile/roland-cartoon.png') }}" alt="Cartoon portrait of {{ $profile->name }}"></div>
       <div class="statusbar" id="viewer-status">Image 1 of 3</div>
     </section>
 
@@ -160,7 +218,7 @@ Type "help" to see available commands.</pre><form id="terminal-form"><label>C:\P
       <div class="start-columns">
         <div class="start-left">
           <button data-open="projects"><span></span><b>My Projects<small>View my work</small></b></button><button data-open="contact"><span></span><b>Contact Me<small>Send a message</small></b></button><hr>
-          <button data-open="about"><span></span>About Me</button><button data-open="music"><span></span>Music Player</button><button data-open="media"><span></span>Media Player</button><button data-open="paint"><span></span>Paint</button>
+          <button data-open="about"><span></span>About Me</button><button data-open="music"><span></span>Music Player</button><button data-open="media"><span></span>Media Player</button><button data-open="paint"><span></span>Paint</button><button data-open="minesweeper"><span></span>Minesweeper</button>
           <button class="all-programs" id="all-programs-button" type="button" aria-expanded="false" aria-controls="all-programs-menu"><strong>All Programs</strong><img src="{{ asset('assets/start-menu/arrow.webp') }}" alt=""></button>
         </div>
         <div class="start-right">@foreach($socialLinks->take(4) as $link)<a href="{{ $link->url }}" target="_blank" rel="noopener">{{ $link->label }}</a>@endforeach<hr><button data-open="resume">My Resume</button><button data-open="terminal">Command Prompt</button><button data-open="viewer">Image Viewer</button></div>
@@ -170,12 +228,12 @@ Type "help" to see available commands.</pre><form id="terminal-form"><label>C:\P
 
     <aside class="all-programs-menu" id="all-programs-menu" aria-label="All Programs">
       <button data-open="about"><img src="{{ asset('assets/desktop/about.webp') }}" alt=""><span>About Me</span></button><button data-open="projects"><img src="{{ asset('assets/desktop/projects.webp') }}" alt=""><span>My Projects</span></button><button data-open="contact"><img src="{{ asset('assets/desktop/contact.webp') }}" alt=""><span>Contact Me</span></button><button data-open="resume"><img src="{{ asset('assets/desktop/resume.webp') }}" alt=""><span>My Resume</span></button><hr>
-      <button data-open="music"><img src="{{ asset('assets/start-menu/music.webp') }}" alt=""><span>Music Player</span></button><button data-open="media"><img src="{{ asset('assets/start-menu/mediaPlayer.webp') }}" alt=""><span>Media Player</span></button><button data-open="paint"><img src="{{ asset('assets/start-menu/paint.webp') }}" alt=""><span>Paint</span></button><button data-open="viewer"><img src="{{ asset('assets/start-menu/photos.webp') }}" alt=""><span>Image Viewer</span></button><button data-open="terminal"><img src="{{ asset('assets/start-menu/cmd.webp') }}" alt=""><span>Command Prompt</span></button>
+      <button data-open="music"><img src="{{ asset('assets/start-menu/music.webp') }}" alt=""><span>Music Player</span></button><button data-open="media"><img src="{{ asset('assets/start-menu/mediaPlayer.webp') }}" alt=""><span>Media Player</span></button><button data-open="paint"><img src="{{ asset('assets/start-menu/paint.webp') }}" alt=""><span>Paint</span></button><button data-open="minesweeper"><img src="{{ asset('assets/start-menu/minesweeper.svg') }}" alt=""><span>Minesweeper</span></button><button data-open="jsonstudio"><img src="{{ asset('assets/start-menu/json-studio.svg') }}" alt=""><span>JSON Studio</span></button><button data-open="viewer"><img src="{{ asset('assets/start-menu/photos.webp') }}" alt=""><span>Image Viewer</span></button><button data-open="terminal"><img src="{{ asset('assets/start-menu/cmd.webp') }}" alt=""><span>Command Prompt</span></button>
     </aside>
 
     <nav class="taskbar" aria-label="Taskbar"><button class="start-button" id="start-button" aria-expanded="false"><span></span>start</button><div class="task-items" id="task-items"></div><div class="system-tray"><button id="welcome-button" title="Show welcome"></button><button id="crt-toggle" title="Toggle CRT effect"></button><button id="fullscreen-toggle" title="Toggle fullscreen"></button><span id="clock">00:00</span></div></nav>
     <div class="crt-overlay" aria-hidden="true"></div><div class="toast" id="toast" role="status">Welcome to Roland OS.</div>
   </main>
-  <script src="{{ asset('script.js') }}"></script>
+  <script src="{{ asset('script.js') }}?v={{ filemtime(public_path('script.js')) }}"></script>
 </body>
 </html>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="1.4"/>
+      <feOffset dx="1.5" dy="2"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope=".75"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <text x="32" y="43" fill="#102b59" fill-opacity=".96" stroke="#ffffff" stroke-opacity=".95" stroke-width="2.3" paint-order="stroke" font-family="Tahoma, Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="-3" text-anchor="middle" filter="url(#shadow)">RA</text>
+</svg>

@@ -18,7 +18,7 @@ Route::post('/contact', [ContactController::class, 'store'])->middleware('thrott
 
 Route::middleware('guest')->group(function () {
     Route::get('/admin/login', [LoginController::class, 'show'])->name('login');
-    Route::post('/admin/login', [LoginController::class, 'login'])->name('admin.login');
+    Route::post('/admin/login', [LoginController::class, 'login'])->middleware('throttle:5,1')->name('admin.login');
 });
 
 Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {

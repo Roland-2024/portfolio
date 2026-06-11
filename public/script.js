@@ -19,6 +19,8 @@ const names = {
   music: "Music Player",
   media: "Media Player",
   paint: "Paint",
+  minesweeper: "Minesweeper",
+  jsonstudio: "JSON Studio",
   terminal: "Command Prompt",
   viewer: "Image Viewer"
 };
@@ -30,6 +32,8 @@ const iconPaths = {
   music: "/assets/start-menu/music.webp",
   media: "/assets/start-menu/mediaPlayer.webp",
   paint: "/assets/start-menu/paint.webp",
+  minesweeper: "/assets/start-menu/minesweeper.svg",
+  jsonstudio: "/assets/start-menu/json-studio.svg",
   terminal: "/assets/start-menu/cmd.webp",
   viewer: "/assets/start-menu/photos.webp"
 };
@@ -48,6 +52,11 @@ const appAliases = {
   media: "media",
   "media player": "media",
   paint: "paint",
+  minesweeper: "minesweeper",
+  mines: "minesweeper",
+  json: "jsonstudio",
+  "json studio": "jsonstudio",
+  jsonstudio: "jsonstudio",
   terminal: "terminal",
   cmd: "terminal",
   "command prompt": "terminal",
@@ -201,6 +210,7 @@ function openWindow(name, { record = true } = {}) {
     taskItems.append(task);
   }
   activateWindow(win);
+  if (name === "media") loadYouTubePlayer();
   if (record) recordNavigation(name);
   closeStart();
 }
@@ -241,6 +251,10 @@ function closeWindowMenus() {
 }
 
 const windowMenus = {
+  game: [
+    ["New game", "new-minesweeper"],
+    ["Close", "close"]
+  ],
   file: [
     ["Open About Me", "open:about"],
     ["Open Projects", "open:projects"],
@@ -288,6 +302,8 @@ async function runCommand(command, win) {
   } else if (command === "focus-contact") {
     openWindow("contact");
     setTimeout(() => document.querySelector('#contact-form input[name="name"]')?.focus(), 100);
+  } else if (command === "new-minesweeper") {
+    startMinesweeper();
   } else if (command === "maximize") {
     win.classList.toggle("maximized");
   } else if (command === "crt") {
@@ -472,23 +488,65 @@ windows.forEach(win => {
 });
 
 document.querySelectorAll("[data-audio-src]").forEach(button => {
-  button.addEventListener("click", () => {
+  button.addEventListener("click", async () => {
     const audio = document.querySelector("#music-audio");
+    const status = document.querySelector("#window-music .statusbar");
     audio.src = button.dataset.audioSrc;
-    audio.play().catch(() => {});
-    document.querySelector("#window-music .statusbar").textContent = `Playing: ${button.textContent}`;
+    audio.currentTime = 0;
+    try {
+      await audio.play();
+      status.textContent = `Playing: ${button.textContent}`;
+    } catch {
+      status.textContent = `${button.textContent} loaded. Press Play in the audio controls.`;
+    }
   });
 });
 
 document.querySelectorAll("[data-media-action]").forEach(button => {
   button.addEventListener("click", () => {
-    const image = document.querySelector("#media-preview");
     const isPlay = button.dataset.mediaAction === "play";
-    image.src = isPlay ? `${image.dataset.src}?play=${Date.now()}` : "";
-    image.classList.toggle("stopped", !isPlay);
-    document.querySelector("#window-media .statusbar").textContent = isPlay ? "Playing" : "Stopped";
+    if (isPlay) loadYouTubePlayer(true);
+    else stopYouTubePlayer();
   });
 });
+
+function youtubeEmbedUrl(autoplay = false) {
+  const player = document.querySelector("#media-youtube");
+  const params = new URLSearchParams({
+    autoplay: autoplay ? "1" : "0",
+    rel: "0",
+    enablejsapi: "1",
+    origin: window.location.origin
+  });
+  if (autoplay) params.set("mute", "1");
+  return `https://www.youtube.com/embed/${player.dataset.videoId}?${params}`;
+}
+
+function loadYouTubePlayer(autoplay = false) {
+  const player = document.querySelector("#media-youtube");
+  const placeholder = document.querySelector("#media-placeholder");
+  if (!player) return;
+  const nextUrl = youtubeEmbedUrl(autoplay);
+  player.onload = () => {
+    if (autoplay) {
+      player.contentWindow?.postMessage(JSON.stringify({ event: "command", func: "playVideo", args: [] }), "*");
+    }
+  };
+  if (player.src !== nextUrl) player.src = nextUrl;
+  player.classList.add("playing");
+  placeholder.hidden = true;
+  document.querySelector("#window-media .statusbar").textContent = autoplay ? "Playing YouTube video muted" : "YouTube video ready";
+}
+
+function stopYouTubePlayer() {
+  const player = document.querySelector("#media-youtube");
+  const placeholder = document.querySelector("#media-placeholder");
+  player.src = "";
+  player.classList.remove("playing");
+  placeholder.hidden = false;
+  placeholder.innerHTML = "<strong>Video stopped</strong><span>Click Play to load it again.</span>";
+  document.querySelector("#window-media .statusbar").textContent = "Stopped";
+}
 
 const paintCanvas = document.querySelector("#paint-canvas");
 if (paintCanvas) {
@@ -540,6 +598,265 @@ if (paintCanvas) {
   });
 }
 
+const mineBoard = document.querySelector("#mine-board");
+const mineCounter = document.querySelector("#mine-counter");
+const mineTimer = document.querySelector("#mine-timer");
+const mineReset = document.querySelector("#mine-reset");
+const mineStatus = document.querySelector("#mine-status");
+const mineRows = 9;
+const mineColumns = 9;
+const mineTotal = 10;
+let mineCells = [];
+let mineStarted = false;
+let mineGameOver = false;
+let mineFlags = 0;
+let mineSeconds = 0;
+let mineTimerId = null;
+
+function formatMineDisplay(value) {
+  return String(Math.max(-99, Math.min(999, value))).padStart(3, "0");
+}
+
+function mineNeighbors(index) {
+  const row = Math.floor(index / mineColumns);
+  const column = index % mineColumns;
+  const neighbors = [];
+  for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
+    for (let columnOffset = -1; columnOffset <= 1; columnOffset += 1) {
+      if (rowOffset === 0 && columnOffset === 0) continue;
+      const nextRow = row + rowOffset;
+      const nextColumn = column + columnOffset;
+      if (nextRow >= 0 && nextRow < mineRows && nextColumn >= 0 && nextColumn < mineColumns) {
+        neighbors.push(nextRow * mineColumns + nextColumn);
+      }
+    }
+  }
+  return neighbors;
+}
+
+function updateMineDisplays() {
+  mineCounter.value = formatMineDisplay(mineTotal - mineFlags);
+  mineCounter.textContent = mineCounter.value;
+  mineTimer.value = formatMineDisplay(mineSeconds);
+  mineTimer.textContent = mineTimer.value;
+}
+
+function placeMines(safeIndex) {
+  const available = mineCells.map((_, index) => index).filter(index => index !== safeIndex);
+  for (let index = available.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [available[index], available[randomIndex]] = [available[randomIndex], available[index]];
+  }
+  available.slice(0, mineTotal).forEach(index => {
+    mineCells[index].mine = true;
+  });
+  mineCells.forEach((cell, index) => {
+    cell.count = mineNeighbors(index).filter(neighbor => mineCells[neighbor].mine).length;
+  });
+}
+
+function startMineTimer() {
+  clearInterval(mineTimerId);
+  mineTimerId = setInterval(() => {
+    mineSeconds = Math.min(999, mineSeconds + 1);
+    updateMineDisplays();
+  }, 1000);
+}
+
+function renderMineCell(cell) {
+  const button = cell.button;
+  button.className = "mine-cell";
+  button.removeAttribute("data-count");
+  if (cell.revealed) {
+    button.classList.add("revealed");
+    if (cell.mine) {
+      button.textContent = "✹";
+      button.setAttribute("aria-label", "Mine");
+    } else if (cell.count) {
+      button.textContent = String(cell.count);
+      button.dataset.count = String(cell.count);
+      button.setAttribute("aria-label", `${cell.count} nearby mines`);
+    } else {
+      button.textContent = "";
+      button.setAttribute("aria-label", "Empty revealed cell");
+    }
+  } else if (cell.flagged) {
+    button.classList.add("flagged");
+    button.textContent = "⚑";
+    button.setAttribute("aria-label", "Flagged hidden cell");
+  } else {
+    button.textContent = "";
+    button.setAttribute("aria-label", "Hidden cell");
+  }
+}
+
+function finishMinesweeper(won, hitIndex = -1) {
+  mineGameOver = true;
+  clearInterval(mineTimerId);
+  mineCells.forEach((cell, index) => {
+    if (cell.mine) cell.revealed = true;
+    renderMineCell(cell);
+    if (!won && index === hitIndex) cell.button.classList.add("mine-hit");
+  });
+  mineReset.textContent = won ? "😎" : "😵";
+  mineStatus.textContent = won ? `You cleared the field in ${mineSeconds} seconds!` : "Game over. Click the face to try again.";
+}
+
+function checkMinesweeperWin() {
+  if (mineCells.filter(cell => cell.revealed && !cell.mine).length === mineRows * mineColumns - mineTotal) {
+    finishMinesweeper(true);
+  }
+}
+
+function revealMineCell(index) {
+  const cell = mineCells[index];
+  if (mineGameOver || cell.revealed || cell.flagged) return;
+  if (!mineStarted) {
+    mineStarted = true;
+    placeMines(index);
+    startMineTimer();
+    mineStatus.textContent = "Game in progress";
+  }
+  cell.revealed = true;
+  renderMineCell(cell);
+  if (cell.mine) {
+    finishMinesweeper(false, index);
+    return;
+  }
+  if (cell.count === 0) mineNeighbors(index).forEach(revealMineCell);
+  checkMinesweeperWin();
+}
+
+function flagMineCell(index) {
+  const cell = mineCells[index];
+  if (mineGameOver || cell.revealed || (!cell.flagged && mineFlags >= mineTotal)) return;
+  cell.flagged = !cell.flagged;
+  mineFlags += cell.flagged ? 1 : -1;
+  renderMineCell(cell);
+  updateMineDisplays();
+}
+
+function startMinesweeper() {
+  clearInterval(mineTimerId);
+  mineStarted = false;
+  mineGameOver = false;
+  mineFlags = 0;
+  mineSeconds = 0;
+  mineReset.textContent = "🙂";
+  mineStatus.textContent = "Beginner: 9 × 9 board, 10 mines";
+  mineBoard.replaceChildren();
+  mineCells = Array.from({ length: mineRows * mineColumns }, (_, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "mine-cell";
+    button.dataset.index = String(index);
+    button.setAttribute("role", "gridcell");
+    button.setAttribute("aria-label", "Hidden cell");
+    button.addEventListener("click", () => revealMineCell(index));
+    button.addEventListener("contextmenu", event => {
+      event.preventDefault();
+      flagMineCell(index);
+    });
+    button.addEventListener("keydown", event => {
+      if (event.key === "Enter" && event.shiftKey) {
+        event.preventDefault();
+        flagMineCell(index);
+      }
+    });
+    mineBoard.append(button);
+    return { button, mine: false, count: 0, revealed: false, flagged: false };
+  });
+  updateMineDisplays();
+}
+
+mineReset?.addEventListener("click", startMinesweeper);
+if (mineBoard) startMinesweeper();
+
+const jsonInput = document.querySelector("#json-input");
+const jsonOutput = document.querySelector("#json-output");
+const jsonStatus = document.querySelector("#json-status");
+const jsonSample = {
+  developer: "Roland Aga",
+  role: "Full Stack Web Developer",
+  technologies: ["PHP", "Laravel", "WordPress", "WooCommerce", "React.js", "Tailwind CSS"],
+  availableForProjects: true,
+  portfolio: {
+    website: "https://rolandaga.com",
+    github: "https://github.com/Roland-2024"
+  }
+};
+
+function parseJsonStudioInput() {
+  const source = jsonInput.value.trim();
+  if (!source) throw new Error("Input is empty.");
+  return { source, value: JSON.parse(source) };
+}
+
+function setJsonStudioStatus(message, valid = true) {
+  jsonStatus.textContent = message;
+  jsonStatus.classList.toggle("error", !valid);
+}
+
+function runJsonStudioAction(action) {
+  if (action === "clear") {
+    jsonInput.value = "";
+    jsonOutput.value = "";
+    setJsonStudioStatus("Cleared. Paste JSON or load the sample.");
+    jsonInput.focus();
+    return;
+  }
+  if (action === "sample") {
+    jsonInput.value = JSON.stringify(jsonSample, null, 2);
+    jsonOutput.value = "";
+    setJsonStudioStatus("Sample JSON loaded. Click Format or Minify.");
+    return;
+  }
+  if (action === "copy") {
+    if (!jsonOutput.value) {
+      setJsonStudioStatus("There is no output to copy.", false);
+      return;
+    }
+    navigator.clipboard.writeText(jsonOutput.value)
+      .then(() => setJsonStudioStatus(`Copied ${jsonOutput.value.length} characters to the clipboard.`))
+      .catch(() => setJsonStudioStatus("Clipboard access is unavailable. Select the output manually.", false));
+    return;
+  }
+
+  try {
+    const { source, value } = parseJsonStudioInput();
+    if (action === "validate") {
+      jsonOutput.value = JSON.stringify(value, null, 2);
+      setJsonStudioStatus(`Valid JSON. ${source.length} characters parsed successfully.`);
+    } else if (action === "minify") {
+      jsonOutput.value = JSON.stringify(value);
+      setJsonStudioStatus(`Minified from ${source.length} to ${jsonOutput.value.length} characters.`);
+    } else {
+      jsonOutput.value = JSON.stringify(value, null, 2);
+      setJsonStudioStatus(`Formatted successfully. ${jsonOutput.value.split("\n").length} lines.`);
+    }
+  } catch (error) {
+    jsonOutput.value = "";
+    setJsonStudioStatus(`Invalid JSON: ${error.message}`, false);
+  }
+}
+
+document.querySelectorAll("[data-json-action]").forEach(button => {
+  button.addEventListener("click", () => runJsonStudioAction(button.dataset.jsonAction));
+});
+
+jsonInput?.addEventListener("keydown", event => {
+  if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
+    runJsonStudioAction("format");
+  }
+  if (event.key === "Tab") {
+    event.preventDefault();
+    const start = jsonInput.selectionStart;
+    const end = jsonInput.selectionEnd;
+    jsonInput.setRangeText("  ", start, end, "end");
+  }
+});
+
 const terminalForm = document.querySelector("#terminal-form");
 const terminalInput = document.querySelector("#terminal-input");
 const terminalOutput = document.querySelector("#terminal-output");
@@ -577,12 +894,14 @@ terminalInput?.addEventListener("keydown", event => {
 const viewerContent = document.querySelector(".viewer-content");
 if (viewerContent) {
   const viewerImages = JSON.parse(viewerContent.dataset.images);
+  const viewerImageAlts = JSON.parse(viewerContent.dataset.imageAlts);
   const viewerImage = document.querySelector("#viewer-image");
   let viewerIndex = 0;
   document.querySelectorAll("[data-viewer-action]").forEach(button => {
     button.addEventListener("click", () => {
       viewerIndex = (viewerIndex + Number(button.dataset.viewerAction) + viewerImages.length) % viewerImages.length;
       viewerImage.src = viewerImages[viewerIndex];
+      viewerImage.alt = viewerImageAlts[viewerIndex];
       document.querySelector("#viewer-status").textContent = `Image ${viewerIndex + 1} of ${viewerImages.length}`;
     });
   });

@@ -17,6 +17,12 @@ class Project extends Model
 
     public function getImageUrlAttribute(): ?string
     {
-        return $this->image ? asset('storage/'.$this->image) : null;
+        if (! $this->image) {
+            return null;
+        }
+
+        return str_starts_with($this->image, 'assets/')
+            ? asset($this->image)
+            : asset('storage/'.$this->image);
     }
 }
